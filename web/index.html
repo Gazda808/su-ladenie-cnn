@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ladenie CNN – Výsledky experimentov</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="results.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" id="brand-home" href="#">
+        <span class="logo">⊞</span>
+        <div>
+          <h1>Ladenie neurónovej siete CNN</h1>
+          <p class="subtitle">Praktické zadanie zo Strojového učenia · Interaktívny prehliadač experimentov</p>
+        </div>
+      </a>
+      <nav class="tabs">
+        <button class="tab active" data-view="overview">Prehľad</button>
+        <button class="tab" data-view="compare">Porovnanie</button>
+        <button class="tab" data-view="detail">Detail experimentu</button>
+        <button class="tab" data-view="konfigurator">Konfigurátor</button>
+        <button class="tab" data-view="about">O zadaní</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section id="view-overview" class="view active">
+      <div class="filters card">
+        <div class="filter-group">
+          <label>Dátová sada</label>
+          <select id="filter-dataset">
+            <option value="all">Všetky</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Kategória</label>
+          <select id="filter-category">
+            <option value="all">Všetky</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Zoradiť podľa</label>
+          <select id="filter-sort">
+            <option value="accuracy_desc">Presnosť (zostupne)</option>
+            <option value="accuracy_asc">Presnosť (vzostupne)</option>
+            <option value="params_asc">Počet parametrov</option>
+            <option value="time_asc">Čas trénovania</option>
+            <option value="id">ID experimentu</option>
+          </select>
+        </div>
+        <div class="filter-group grow">
+          <label>Hľadať</label>
+          <input type="text" id="filter-search" placeholder="napr. dropout, BN, lr..." />
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi card">
+          <div class="kpi-label">Počet experimentov</div>
+          <div class="kpi-value" id="kpi-count">–</div>
+        </div>
+        <div class="kpi card">
+          <div class="kpi-label">Najlepšia presnosť</div>
+          <div class="kpi-value accent" id="kpi-best-acc">–</div>
+          <div class="kpi-sub" id="kpi-best-name">–</div>
+        </div>
+        <div class="kpi card">
+          <div class="kpi-label">Priemerná presnosť</div>
+          <div class="kpi-value" id="kpi-avg-acc">–</div>
+        </div>
+        <div class="kpi card">
+          <div class="kpi-label">Celkový čas trénovania</div>
+          <div class="kpi-value" id="kpi-total-time">–</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Porovnanie testovacej presnosti</h2>
+          <p class="muted">Stĺpce sú zafarbené podľa kategórie hyperparametra. Po kliknutí na stĺpec sa otvorí detail experimentu.</p>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-overview"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Tabuľka experimentov</h2>
+          <p class="muted">Kompletné výsledky všetkých spustených experimentov. Kliknutím na riadok zobrazíte detail.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Názov</th>
+                <th>Kategória</th>
+                <th>Dátová sada</th>
+                <th class="num">Presnosť</th>
+                <th class="num">F1 (macro)</th>
+                <th class="num">Loss</th>
+                <th class="num">Parametre</th>
+                <th class="num">Epochy</th>
+                <th class="num">Čas (s)</th>
+              </tr>
+            </thead>
+            <tbody id="overview-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-compare" class="view">
+      <div class="card">
+        <div class="card-header">
+          <h2>Porovnanie experimentov</h2>
+          <p class="muted">Vyberte si až 6 experimentov a porovnajte ich krivky učenia, finálne metriky a hyperparametre.</p>
+        </div>
+        <div id="compare-picker" class="compare-picker"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Krivky presnosti</h2></div>
+        <div class="chart-wrap"><canvas id="chart-compare-acc"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Krivky straty (loss)</h2></div>
+        <div class="chart-wrap"><canvas id="chart-compare-loss"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Tabuľka metrík</h2></div>
+        <div class="table-wrap">
+          <table class="results-table" id="compare-table">
+            <thead>
+              <tr>
+                <th>Experiment</th>
+                <th class="num">Test acc</th>
+                <th class="num">F1</th>
+                <th class="num">Loss</th>
+                <th class="num">Parametre</th>
+                <th class="num">Čas</th>
+                <th>Kľúčové parametre</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-detail" class="view">
+      <div class="card">
+        <div class="card-header detail-header">
+          <div>
+            <select id="detail-select"></select>
+          </div>
+          <div class="detail-meta">
+            <span class="badge" id="detail-category"></span>
+            <span class="badge ghost" id="detail-dataset"></span>
+          </div>
+        </div>
+        <p class="muted" id="detail-description"></p>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi card"><div class="kpi-label">Test presnosť</div><div class="kpi-value accent" id="d-acc">–</div></div>
+        <div class="kpi card"><div class="kpi-label">F1 (macro)</div><div class="kpi-value" id="d-f1">–</div></div>
+        <div class="kpi card"><div class="kpi-label">Test loss</div><div class="kpi-value" id="d-loss">–</div></div>
+        <div class="kpi card"><div class="kpi-label">Parametre</div><div class="kpi-value" id="d-params">–</div></div>
+        <div class="kpi card"><div class="kpi-label">Epochy</div><div class="kpi-value" id="d-epochs">–</div></div>
+        <div class="kpi card"><div class="kpi-label">Čas trénovania</div><div class="kpi-value" id="d-time">–</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h2>Krivky presnosti</h2></div>
+          <div class="chart-wrap"><canvas id="d-chart-acc"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Krivky straty</h2></div>
+          <div class="chart-wrap"><canvas id="d-chart-loss"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h2>Matica zámen</h2>
+            <p class="muted">Riadky = skutočná trieda · stĺpce = predikcia. Tmavšie odtiene znamenajú vyšší počet vzoriek.</p>
+          </div>
+          <div id="d-confusion" class="confusion"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h2>Presnosť po triedach</h2>
+          </div>
+          <div class="chart-wrap"><canvas id="d-chart-perclass"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h2>Hyperparametre</h2></div>
+          <div id="d-hparams" class="kv-table"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Architektúra siete</h2></div>
+          <div id="d-architecture" class="arch-list"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Ukážkové predikcie</h2>
+          <p class="muted">Náhodne vybrané vzorky z testovacej sady s predikciou modelu. Zelený rámček = správna predikcia, červený = chybná.</p>
+        </div>
+        <div id="d-samples" class="samples-grid"></div>
+      </div>
+    </section>
+
+    <section id="view-konfigurator" class="view"></section>
+
+    <section id="view-about" class="view">
+      <div class="card">
+        <div class="card-header"><h2>Ladenie neurónovej siete CNN</h2></div>
+        <div class="prose">
+          <h3>Cieľ zadania</h3>
+          <p>Cieľom tohto zadania je preskúmať vplyv jednotlivých <strong>hyperparametrov</strong> a <strong>architektonických rozhodnutí</strong> na kvalitu konvolučnej neurónovej siete (CNN). Implementovaný framework v PyTorchi umožňuje spustiť veľké množstvo experimentov ablačnou metódou – v každej skupine experimentov sa mení iba jeden parameter pri zachovaní ostatných.</p>
+
+          <h3>Metodológia</h3>
+          <p>Experimenty sú rozdelené do siedmich kategórií, pričom každá kategória izoluje vplyv jedného parametra:</p>
+          <ul>
+            <li><strong>Topológia</strong> – počet a šírka konvolučných blokov (od 1 do 3 blokov, 16 až 128 filtrov)</li>
+            <li><strong>Optimalizátor</strong> – SGD, Adam, AdamW, RMSprop</li>
+            <li><strong>Rýchlosť učenia</strong> – 0.0001, 0.001, 0.01, 0.1</li>
+            <li><strong>Aktivačná funkcia</strong> – ReLU, LeakyReLU, ELU, GELU</li>
+            <li><strong>Regularizácia</strong> – Dropout (0.25, 0.5), Batch Normalization, weight decay, kombinácie</li>
+            <li><strong>Veľkosť jadra</strong> – 3×3, 5×5, 7×7</li>
+            <li><strong>Veľkosť dávky</strong> – 32, 64, 128, 256</li>
+          </ul>
+          <p>Celkovo bolo natrénovaných <strong>34 experimentov</strong> na troch dátových sadách: MNIST, Fashion-MNIST a CIFAR-10.</p>
+
+          <h3>Architektúra modelu</h3>
+          <p>Použitá je flexibilná trieda <code>ConfigurableCNN</code> (<code>src/models.py</code>) postavená na nasledujúcom vzore:</p>
+          <pre><code>Vstup → [Conv2d → BN? → Aktivácia → Pool → Dropout?] × N
+       → Flatten → Linear → Aktivácia → Dropout? → Linear → Logit</code></pre>
+          <p>Každý konvolučný blok obsahuje: konvolúciu s <em>padding = kernel//2</em> (zachovanie priestorových rozmerov pred poolingom), volitelnú batch normalizáciu, aktivačnú funkciu a MaxPool2d/AvgPool2d s krokom 2. Klasifikačná hlava je plne prepojená vrstva s voliteľným dropoutom.</p>
+
+          <h3>Mierky efektívnosti (hodnotenie)</h3>
+          <p>Pre každý experiment sa zaznamenávajú a zobrazujú nasledujúce metriky:</p>
+          <ul>
+            <li><strong>Accuracy</strong> – podiel správne klasifikovaných vzoriek na testovacej sade</li>
+            <li><strong>Cross-entropy loss</strong> – stratová funkcia, sledovaná na trénovacej aj testovacej sade</li>
+            <li><strong>Macro Precision</strong> – priemer presnosti cez všetky triedy (bez váhy počtom vzoriek)</li>
+            <li><strong>Macro Recall</strong> – priemer zachytenia cez všetky triedy</li>
+            <li><strong>Macro F1-score</strong> – harmonický priemer precision a recall</li>
+            <li><strong>Matica zámen</strong> – vizualizácia chybných klasifikácií pre každý pár tried</li>
+            <li><strong>Per-class accuracy a F1</strong> – identifikácia problematických tried</li>
+            <li><strong>Krivky učenia</strong> – loss a accuracy po každej epoche (tréning aj validácia)</li>
+            <li><strong>Počet parametrov</strong> a <strong>čas trénovania</strong> – efektívnosť modelu</li>
+          </ul>
+
+          <h3>Fungovanie programu</h3>
+          <p>Systém pozostáva z dvoch vrstiev:</p>
+          <p><strong>Backend (Python / PyTorch)</strong> — modul <code>src/experiments.py</code> definuje všetky experimenty deklaratívne (každý ako odchýlka od baselinovej konfigurácie). Skript <code>src/train.py</code> ich iteratívne spúšťa: načíta dáta cez <code>src/datasets.py</code>, zostrojí model (<code>src/models.py</code>), trénuje ho cez <code>src/utils.py</code> a na konci uloží kompletné výsledky (metriky, históriu, maticu zámen, ukážkové predikcie) do <code>results/results.json</code> a <code>web/results.js</code>.</p>
+          <p><strong>Frontend (HTML/CSS/JS)</strong> — súbor <code>web/app.js</code> načíta predgenerovaný <code>results.js</code> a poskytne päť interaktívnych pohľadov: <em>Prehľad</em> s filtrovateľnou tabuľkou a stĺpcovým grafom, <em>Porovnanie</em> s krivkami učenia pre až 6 experimentov naraz, <em>Detail</em> s maticou zámen a ukážkovými predikciami, <em>Konfigurátor</em> na odhad výkonu novej konfigurácie a <em>O zadaní</em>.</p>
+
+          <h3>Štruktúra projektu</h3>
+          <pre><code>projekt/
+├── src/
+│   ├── __init__.py
+│   ├── datasets.py     # načítanie MNIST / Fashion-MNIST / CIFAR-10
+│   ├── experiments.py  # definícia 34 experimentov
+│   ├── models.py       # ConfigurableCNN
+│   ├── train.py        # hlavný trénovací skript
+│   └── utils.py        # optimalizátory, evaluácia, metriky
+├── web/
+│   ├── index.html      # SPA rozhranie
+│   ├── app.js          # interaktívna logika
+│   ├── style.css       # dizajn
+│   └── results.js      # auto-generované výsledky
+└── results/
+    └── results.json    # surové výsledky experimentov</code></pre>
+
+          <h3>Implementácia a technologický stack</h3>
+          <ul>
+            <li><strong>PyTorch 2.x</strong> – definícia a tréning CNN modelov</li>
+            <li><strong>torchvision</strong> – načítanie a augmentácia dátových sád</li>
+            <li><strong>NumPy</strong> – výpočet metrík (matica zámen, F1, precision, recall)</li>
+            <li><strong>HTML5 / CSS3 / Vanilla JS</strong> – interaktívna SPA bez závislostí na frameworku</li>
+            <li><strong>Chart.js 4</strong> – krivky učenia, stĺpcové a skupinové grafy</li>
+          </ul>
+
+          <h3>Ako spustiť tréning</h3>
+          <pre><code># Rýchle demo (menšia podmnožina dát, 2 epochy):
+python -m src.train --quick
+
+# Plný tréning na celých dátach (všetky experimenty):
+python -m src.train
+
+# Iba experimenty z jednej skupiny (napr. optimalizátory):
+python -m src.train --filter opt_ --merge
+
+# Vlastný počet epoch pre všetky experimenty:
+python -m src.train --epochs 10 --merge</code></pre>
+
+          <p class="muted">Po dokončení tréningu sa výsledky automaticky uložia do <code>results/results.json</code> a do <code>web/results.js</code>. Stačí znova načítať túto stránku — žiadny server nie je potrebný.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>SU | Ladenie neurónovej siete CNN | 2026</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
